@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "raceanalyst": {
+      "commandName": "Project",
+      "commandLineArgs": ".\\output.png"
+    }
+  }
+}
