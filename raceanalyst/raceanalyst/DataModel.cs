@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Text;
 using OpenCvSharp;
@@ -15,8 +17,9 @@ namespace raceanalyst
         private static DataModel me = new DataModel();
 
         private List<Mat> chars = new List<Mat>();
-        private List<char> labels = new List<char>();
+        private List<int> labels = new List<int>();
 
+        private OpenCvSharp.ML.SVM svm;
 
         public static DataModel GetDataModel()
         {
@@ -42,21 +45,24 @@ namespace raceanalyst
             }
         }
 
-        private void bincount(Mat x, Mat weights, int min_length, List<double> bins)
+        private List<double> bincount(Mat x, Mat weights, int min_length)
         {
             double max_x_val = 0;
             double min_val = 0;
             Cv2.MinMaxLoc(x, out min_val, out max_x_val);
 
-            bins = new List<double>(Math.Max((int)max_x_val, min_length));
+            var bins = new double[(Math.Max((int)max_x_val, min_length))];
 
             for (int i = 0; i < x.Rows; i++)
             {
                 for (int j = 0; j < x.Cols; j++)
                 {
-                    bins[x.At<int>(i, j)] += weights.At<float>(i, j);
+                    int idx = x.At<int>(i, j);
+                    bins[idx] += weights.At<float>(i, j);
                 }
             }
+
+            return bins.ToList();
         }
 
         private Mat Preprocess_hog()
@@ -108,8 +114,7 @@ namespace raceanalyst
 
                 for(int i = 0; i < 4; i++)
                 {
-                    var partial_hist = new List<double>();
-                    bincount(bin_cells[i], mag_cells[i], bin_n, partial_hist);
+                    var partial_hist = bincount(bin_cells[i], mag_cells[i], bin_n);
                     hist.AddRange(partial_hist);
                 }
 
@@ -127,13 +132,14 @@ namespace raceanalyst
                     hist[i] = Math.Sqrt(hist[i]);
                 }
 
-                double hist_norm = Cv2.Norm(hist);
+                double hist_norm = Cv2.Norm(OpenCvSharp.InputArray.Create(hist));
 
+
+                for (int i = 0; i < hist.Count; i++)
+                {
+                    hog.At<float>((int)img_index, (int)i) = (float)(hist[i] / (hist_norm + eps));
+                }
             }
-
-
-
-
 
             return hog;
         }
@@ -154,7 +160,7 @@ namespace raceanalyst
             int i = 0;
             foreach (var chr in chars)
             {
-                labels.Add((char)(spc + i));
+                labels.Add((spc + i));
                 if (i == tld)
                 {
                     i = 0;
@@ -164,6 +170,19 @@ namespace raceanalyst
                     i++;
                 }
             }
+
+            Mat samples = Preprocess_hog();
+
+            svm = OpenCvSharp.ML.SVM.Create();
+
+            svm.Gamma = 5.383;
+            svm.C = 2.67;
+            svm.KernelType = OpenCvSharp.ML.SVM.KernelTypes.Rbf;
+            svm.Type = OpenCvSharp.ML.SVM.Types.CSvc;
+
+            svm.Train(samples, OpenCvSharp.ML.SampleTypes.RowSample, OpenCvSharp.InputArray.Create(labels));
+
+            svm.Save("svm_model.dat");
         }
 
         internal void Analyze(string analyzeImage)
