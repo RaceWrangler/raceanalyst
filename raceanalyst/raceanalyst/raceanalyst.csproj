@@ -10,4 +10,10 @@
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.3.0.20200701" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="output.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
