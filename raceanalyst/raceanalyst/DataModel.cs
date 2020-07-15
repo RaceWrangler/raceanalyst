@@ -226,8 +226,12 @@ namespace raceanalyst
         {
             model = OpenCvSharp.ML.SVM.Load(modelFile);
 
+
             Console.WriteLine($"Loading {analyzeImage} . . .");
             var img = new Mat(analyzeImage, ImreadModes.Grayscale);
+
+            Mat cnt_img = new Mat(img.Size(), MatType.CV_32F);
+
 
             Mat threshbin = new Mat();
             Cv2.AdaptiveThreshold(img, threshbin, 1.0, AdaptiveThresholdTypes.MeanC, ThresholdTypes.BinaryInv, 31, 10);
@@ -237,7 +241,7 @@ namespace raceanalyst
 
             HierarchyIndex[] heirs;
             OpenCvSharp.Point[][] contours;
-            bin.FindContours(out contours, out heirs, RetrievalModes.CComp, ContourApproximationModes.ApproxSimple);
+            bin.FindContours(out contours, out heirs, RetrievalModes.List, ContourApproximationModes.ApproxNone);
                 
 
             List<character> chrs = new List<character>();
@@ -264,20 +268,22 @@ namespace raceanalyst
                     });
 
                     if ((ord1 >= Convert.ToInt32(' '))
-                        && (ord1 < Convert.ToInt32('~')))
+                        && (ord1 <  Convert.ToInt32('~')))
                     {
                         Cv2.Rectangle(img, boundingRect, 255);
-                        Cv2.PutText(img, $"{Convert.ToChar(ord1)}", boundingRect.TopLeft, HersheyFonts.HersheyPlain, 3.0, 255);
+                        Cv2.PutText(img, $"{Convert.ToChar(ord1)}", boundingRect.TopLeft, HersheyFonts.HersheyPlain, 2.0, 255);
                     }
                 }
             }
+
+            cnt_img.DrawContours(contours, -1, 255);
 
             var sorted_chars = from chr in chrs
                                orderby chr.y ascending
                                orderby chr.x ascending
                                select chr;
 
-
+            using (new Window(cnt_img))
             using (new Window(img))
             {
                 Cv2.WaitKey();
