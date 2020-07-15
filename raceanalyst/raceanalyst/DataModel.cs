@@ -21,6 +21,8 @@ namespace raceanalyst
 
         private OpenCvSharp.ML.SVM svm;
 
+        private const string modelFile = "svm_model.dat";
+
         public static DataModel GetDataModel()
         {
             return me;
@@ -182,12 +184,14 @@ namespace raceanalyst
 
             svm.Train(samples, OpenCvSharp.ML.SampleTypes.RowSample, OpenCvSharp.InputArray.Create(labels));
 
-            svm.Save("svm_model.dat");
+            svm.Save(modelFile);
         }
 
         internal void Analyze(string analyzeImage)
         {
-            
+            svm = OpenCvSharp.ML.SVM.Load(modelFile);
+
+
         }
     }
 }
