@@ -14,10 +14,19 @@ namespace raceanalyst
 
                 DataModel.GetDataModel().Train(trainImage);
             }
-            else
+            else if ("--num" == args[0])
             {
-                string analyzeImage = args[0];
+                string analyzeImage = args[1];
                 DataModel.GetDataModel().Analyze(analyzeImage);
+            }
+            else if ("--qr" == args[0])
+            {
+                string qrImage = args[1];
+                QRDecoder qrd = new QRDecoder();
+
+                string text = qrd.DecodeImg(qrImage);
+
+                Console.WriteLine($"The QR code detected says: {text}");
             }
         }
     }
