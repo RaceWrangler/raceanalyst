@@ -1,33 +1,56 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace raceanalyst
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            if ("--train" == args[0])
+            var host = CreateHostBuilder(args).Build();
+            using (var scope = host.Services.CreateScope())
             {
-                string trainImage = args[1];
+                LineCrossingAnalyzer lca = new LineCrossingAnalyzer(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>());
 
-                Console.WriteLine($"Training image is {trainImage}");
+                if ((args.Length == 0) || ("--manual" == args[0]))
+                {
+                    lca.AnalyzeFunction = lca.PublishImage;
+                }
+                else if ("--num" == args[0])
+                {
+                    lca.AnalyzeFunction = lca.AnalyzeByNumbers;
+                }
+                else if ("--qr" == args[0])
+                {
+                    lca.AnalyzeFunction = lca.AnalyzeByQRCode;
+                }
+                else if ("--train" == args[0])
+                {
+                    string trainImage = args[1];
 
-                DataModel.GetDataModel().Train(trainImage);
+                    Console.WriteLine($"Training image is {trainImage}");
+
+                    DataModel.GetDataModel().Train(trainImage);
+                    return;
+                }
             }
-            else if ("--num" == args[0])
-            {
-                string analyzeImage = args[1];
-                DataModel.GetDataModel().Analyze(analyzeImage);
-            }
-            else if ("--qr" == args[0])
-            {
-                string qrImage = args[1];
-                QRDecoder qrd = new QRDecoder();
 
-                string text = qrd.DecodeImg(qrImage);
-
-                Console.WriteLine($"The QR code detected says: {text}");
-            }
+            host.Run();
         }
+
+        // Additional configuration is required to successfully run gRPC on macOS.
+        // For instructions on how to configure Kestrel and gRPC clients on macOS, visit https://go.microsoft.com/fwlink/?linkid=2099682
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                });
     }
 }

@@ -1,0 +1,11 @@
+﻿syntax = "proto3";
+
+service AnalyzeNewImage {
+	rpc AnalyzeNewImage (NewImageRequest) returns (NewImageResponse);
+}
+
+message NewImageRequest {
+	string imageName = 1;
+}
+
+message NewImageResponse {};
